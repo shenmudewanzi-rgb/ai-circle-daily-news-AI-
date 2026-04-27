@@ -1,0 +1,29 @@
+name: Generate AI Circle Daily Artifacts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate AI daily brief
+        shell: pwsh
+        run: .\generate-daily-brief.ps1
+
+      - name: Upload generated artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-circle-daily-artifacts
+          path: |
+            data/latest-report.json
+            exports/latest-report.json
+            exports/latest-report.md
+            exports/latest-topics.csv
+            public-site
