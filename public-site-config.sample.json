@@ -1,0 +1,8 @@
+{
+  "appName": "AI圈今日要闻",
+  "mode": "interactive",
+  "apiBaseUrl": "https://your-api-domain.example.com",
+  "publicDataUrl": "./latest-report.json",
+  "publicMarkdownUrl": "./latest-report.md",
+  "publicTopicsCsvUrl": "./latest-topics.csv"
+}

@@ -4,6 +4,9 @@ const state = {
   runtime: {
     mode: "interactive",
     readOnly: false,
+    apiBaseUrl: "",
+    publicDataUrl: "./latest-report.json",
+    siteConfig: null,
   },
   filters: {
     bucket: "all",
@@ -55,7 +58,21 @@ async function boot() {
     return;
   }
 
+  await loadSiteConfig();
   await initializeAppData();
+}
+
+async function loadSiteConfig() {
+  try {
+    const config = await fetchJson("./site-config.json", {}, true);
+    state.runtime.siteConfig = config || null;
+    state.runtime.apiBaseUrl = normalizeBaseUrl(config?.apiBaseUrl);
+    state.runtime.publicDataUrl = normalizePublicDataUrl(config?.publicDataUrl);
+  } catch {
+    state.runtime.siteConfig = null;
+    state.runtime.apiBaseUrl = "";
+    state.runtime.publicDataUrl = "./latest-report.json";
+  }
 }
 
 function wireEvents() {
@@ -92,11 +109,11 @@ function bindChipGroup(container, key) {
 function showFileModeWarning() {
   els.bootNotice.classList.remove("hidden");
   els.bootNotice.innerHTML = `
-    你现在是通过 <code>file://</code> 打开的。中文摘要、定时抓取、导出和机器人推送都依赖本地 API，
-    请运行 <code>run.bat</code> 或 <code>start-server.ps1</code> 后，访问
+    你现在是通过 <code>file://</code> 直接打开页面的。中文摘要、日报生成、导出和机器人推送都依赖后端接口。
+    请运行 <code>run.bat</code> 或 <code>start-server.ps1</code>，再访问
     <a href="http://localhost:8765" target="_blank" rel="noreferrer noopener">http://localhost:8765</a>。
   `;
-  els.statusBanner.textContent = "当前是文件模式，后端接口不可用。";
+  setStatus("当前是文件模式，后端接口不可用。");
 }
 
 async function loadConfig() {
@@ -126,10 +143,10 @@ async function initializeAppData() {
 async function loadPublicStaticSite(cause) {
   state.runtime.mode = "public-static";
   state.runtime.readOnly = true;
-  const report = await apiInternal("./latest-report.json", {}, true);
+  const report = await fetchJson(state.runtime.publicDataUrl, {}, true);
   state.report = report;
   state.config = {
-    appName: "AI圈今日要闻",
+    appName: report.appName || state.runtime.siteConfig?.appName || "AI圈今日要闻",
     reportTopCount: report.topItems?.length || 12,
     timeWindowHours: 72,
     enableAutoPush: false,
@@ -139,13 +156,14 @@ async function loadPublicStaticSite(cause) {
   fillConfigForm(state.config);
   applyReportToUI();
   enterReadOnlyMode();
-  setStatus("当前是公开只读版，展示的是已生成好的最新早报。");
+  setStatus("当前是公开展示模式，展示的是最近一次生成好的早报。");
   showPublicNotice(cause);
 }
 
 function enterInteractiveMode() {
   state.runtime.mode = "interactive";
   state.runtime.readOnly = false;
+  els.bootNotice.classList.add("hidden");
   els.generateButton.disabled = false;
   els.pushButton.disabled = false;
   els.generateButton.classList.remove("hidden");
@@ -160,16 +178,33 @@ function enterReadOnlyMode() {
 }
 
 function showPublicNotice(cause) {
+  const detail = getPublicFallbackReason(cause);
   els.bootNotice.classList.remove("hidden");
   els.bootNotice.innerHTML = `
-    当前页面运行在公开只读模式。你可以公开展示最新早报，但“生成早报、保存 Webhook、机器人推送”这类管理功能已隐藏。
-    ${cause ? `<br />接口回退原因：${escapeHtml(cause.message || String(cause))}` : ""}
+    当前页面运行在公开展示模式。你可以公开展示最新早报，但“生成早报、保存 Webhook、机器人推送”这类管理功能暂时不可用。
+    ${detail ? `<br />${escapeHtml(detail)}` : ""}
   `;
+}
+
+function getPublicFallbackReason(cause) {
+  if (!cause) {
+    return "";
+  }
+
+  const message = String(cause.message || cause);
+  if (message.includes("HTTP 404")) {
+    if (state.runtime.siteConfig?.apiBaseUrl) {
+      return `已配置远程交互接口 ${state.runtime.siteConfig.apiBaseUrl}，但它当前没有正常返回，所以页面先回退到了公开展示模式。`;
+    }
+    return "当前这个公开站点只托管了静态页面，没有接入可写的远程管理接口，所以自动切换到了公开展示模式。";
+  }
+
+  return `页面已自动切换到公开展示模式。原因：${message}`;
 }
 
 async function generateReport(push) {
   setButtonState(true);
-  setStatus(push ? "正在生成并推送..." : "正在抓取、翻译并生成早报...");
+  setStatus(push ? "正在生成并推送..." : "正在抓取、翻译并生成今日早报...");
   try {
     const report = await api("/api/report/generate", {
       method: "POST",
@@ -177,7 +212,7 @@ async function generateReport(push) {
     });
     state.report = report;
     applyReportToUI();
-    setStatus(push ? "早报已生成并尝试推送到机器人。" : "早报已更新。");
+    setStatus(push ? "早报已生成，并已尝试推送到机器人。" : "早报已更新。");
   } catch (error) {
     setStatus(`生成失败：${error.message}`);
   } finally {
@@ -217,7 +252,7 @@ function applyReportToUI() {
   els.totalCount.textContent = String(state.report.counts.total);
   els.creatorCount.textContent = String(state.report.counts.creator);
   els.generatedAt.textContent = formatDate(state.report.generatedAt);
-  els.briefingMeta.textContent = `共 ${state.report.counts.total} 条内容，覆盖官方、媒体和大V分析。`;
+  els.briefingMeta.textContent = `共 ${state.report.counts.total} 条内容，覆盖官方、媒体和大V深度解读。`;
   els.leadCard.innerHTML = `
     <h3>今天先看什么</h3>
     <p>${escapeHtml(state.report.lead)}</p>
@@ -234,9 +269,9 @@ function applyReportToUI() {
 function renderPulse() {
   const { counts, themes = [] } = state.report;
   const cards = [
-    { label: "官方/研究", value: counts.official, text: "第一手信号，适合首发解读。" },
-    { label: "行业媒体", value: counts.media, text: "适合跟融资、产品化和案例。" },
-    { label: "大V/分析师", value: counts.creator, text: "不是搬运，是判断框架和测评。" },
+    { label: "官方/研究", value: counts.official, text: "第一手信号，适合做首发解读。" },
+    { label: "行业媒体", value: counts.media, text: "适合追融资、产品化和新案例。" },
+    { label: "大V/分析师", value: counts.creator, text: "不只是搬运信息，更是判断框架和测评。" },
     {
       label: "今日主题",
       value: themes.length ? themes.map((item) => item.keyword).join(" / ") : "持续跟踪",
@@ -292,10 +327,10 @@ function renderFeed() {
   }
 
   const filtered = getFilteredItems();
-  els.feedSummary.textContent = `筛选后共 ${filtered.length} 条，标题和摘要已转成中文。`;
+  els.feedSummary.textContent = `筛选后共 ${filtered.length} 条，标题和摘要都已转成中文。`;
 
   if (!filtered.length) {
-    els.feedList.innerHTML = `<div class="empty-state">当前筛选条件下没有匹配结果。</div>`;
+    els.feedList.innerHTML = '<div class="empty-state">当前筛选条件下没有匹配结果。</div>';
     return;
   }
 
@@ -324,7 +359,9 @@ function renderSourceStatus() {
   const rows = state.report.sourceStatus || [];
   els.sourceStatusList.innerHTML = rows
     .map((source) => {
-      const detail = source.ok ? `抓取成功 · ${source.count} 条` : `抓取失败 · ${escapeHtml(source.error || "未知错误")}`;
+      const detail = source.ok
+        ? `抓取成功 · ${source.count} 条`
+        : `抓取失败 · ${escapeHtml(source.error || "未知错误")}`;
       return `
         <div class="source-row ${source.ok ? "is-ok" : "is-fail"}">
           <div class="source-row__meta">
@@ -365,9 +402,9 @@ function updateExportLinks() {
   }
 
   if (state.runtime.mode === "public-static") {
-    els.exportMd.href = "./latest-report.md";
-    els.exportCsv.href = "./latest-topics.csv";
-    els.exportJson.href = "./latest-report.json";
+    els.exportMd.href = state.runtime.siteConfig?.publicMarkdownUrl || "./latest-report.md";
+    els.exportCsv.href = state.runtime.siteConfig?.publicTopicsCsvUrl || "./latest-topics.csv";
+    els.exportJson.href = state.runtime.publicDataUrl || "./latest-report.json";
     return;
   }
 
@@ -402,9 +439,21 @@ async function api(url, options = {}) {
 }
 
 async function apiInternal(url, options = {}, silent = false) {
+  return fetchJson(resolveApiUrl(url), options, silent);
+}
+
+function resolveApiUrl(url) {
+  if (state.runtime.apiBaseUrl && typeof url === "string" && url.startsWith("/api/")) {
+    return `${state.runtime.apiBaseUrl}${url}`;
+  }
+  return url;
+}
+
+async function fetchJson(url, options = {}, silent = false) {
   const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
+      ...(options.headers || {}),
     },
     ...options,
   });
@@ -426,6 +475,15 @@ async function apiInternal(url, options = {}, silent = false) {
   }
 
   return response.json();
+}
+
+function normalizeBaseUrl(value) {
+  return String(value || "").trim().replace(/\/$/, "");
+}
+
+function normalizePublicDataUrl(value) {
+  const trimmed = String(value || "").trim();
+  return trimmed || "./latest-report.json";
 }
 
 function formatDate(value) {
