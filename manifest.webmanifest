@@ -1,0 +1,17 @@
+{
+  "name": "AI圈今日要闻",
+  "short_name": "AI要闻",
+  "description": "每日中文 AI 早报与选题池。",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6efe4",
+  "theme_color": "#f6efe4",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

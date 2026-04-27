@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "AI圈今日要闻",
+    "navigationBarBackgroundColor": "#f6efe4",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f6efe4",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

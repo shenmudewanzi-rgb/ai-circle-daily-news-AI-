@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "defaultTitle": "AI圈今日要闻",
+    "titleBarColor": "#f6efe4",
+    "backgroundColor": "#f6efe4"
+  }
+}

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI圈今日要闻</title>
+    <meta
+      name="description"
+      content="每日聚合可信 AI 资讯，生成中文早报、爆点标题、公众号选题池，并支持飞书和企业微信机器人推送。"
+    />
+    <meta name="theme-color" content="#f6efe4" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero__copy">
+          <p class="eyebrow">Daily Briefing For Content Teams</p>
+          <h1>AI圈今日要闻</h1>
+          <p class="hero__text">
+            把官方发布、行业媒体、上下游产业链和大V深度讲解，整理成
+            外行看得进、内行看门道的每日中文 AI 早报。
+          </p>
+          <div class="hero__actions">
+            <button class="action-button" id="generate-button" type="button">刷新并生成早报</button>
+            <button class="ghost-button" id="push-button" type="button">立即推送到机器人</button>
+          </div>
+        </div>
+        <div class="hero__stats">
+          <div class="hero-stat">
+            <span class="hero-stat__label">今日资讯</span>
+            <strong id="total-count">-</strong>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat__label">大V/分析师</span>
+            <strong id="creator-count">-</strong>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat__label">最近生成</span>
+            <strong id="generated-at">待生成</strong>
+          </div>
+        </div>
+      </header>
+
+      <div class="boot-notice hidden" id="boot-notice"></div>
+
+      <main class="layout">
+        <section class="panel briefing-panel">
+          <div class="section-head">
+            <div>
+              <h2>今日AI早报</h2>
+              <p id="briefing-meta">正在准备今日简报。</p>
+            </div>
+            <div class="export-actions">
+              <a class="ghost-button export-link" id="export-md" href="#" download>导出 Markdown</a>
+              <a class="ghost-button export-link" id="export-csv" href="#" download>导出选题池 CSV</a>
+              <a class="ghost-button export-link" id="export-json" href="#" download>导出 JSON</a>
+            </div>
+          </div>
+          <div class="lead-card" id="lead-card"></div>
+          <div class="pulse-grid" id="pulse-grid"></div>
+        </section>
+
+        <section class="panel highlight-panel">
+          <div class="section-head">
+            <div>
+              <h2>今日爆点</h2>
+              <p>每条都附中文标题、中文摘要、说人话和内行看门道。</p>
+            </div>
+          </div>
+          <div class="feed-list" id="top-list"></div>
+        </section>
+
+        <section class="panel topic-panel">
+          <div class="section-head">
+            <div>
+              <h2>公众号选题池</h2>
+              <p>把新闻直接翻译成能做内容的选题方向和表达形式。</p>
+            </div>
+          </div>
+          <div class="topic-grid" id="topic-grid"></div>
+        </section>
+
+        <section class="panel filters-panel">
+          <div class="section-head">
+            <div>
+              <h2>资讯筛选</h2>
+              <p>按来源类型、产业位置和关键词筛今天值得跟的内容。</p>
+            </div>
+          </div>
+          <div class="controls-grid">
+            <label class="field">
+              <span>关键词搜索</span>
+              <input id="search-input" type="search" placeholder="例如 Agent、OpenAI、测评、工作流" />
+            </label>
+            <label class="field">
+              <span>时间窗口</span>
+              <select id="time-window">
+                <option value="24">近 24 小时</option>
+                <option value="72" selected>近 72 小时</option>
+                <option value="168">近 7 天</option>
+              </select>
+            </label>
+          </div>
+          <div class="chip-group" id="bucket-filters">
+            <button class="chip is-active" type="button" data-bucket="all">所有来源</button>
+            <button class="chip" type="button" data-bucket="official">官方/研究</button>
+            <button class="chip" type="button" data-bucket="media">行业媒体</button>
+            <button class="chip" type="button" data-bucket="creator">大V/分析师</button>
+          </div>
+          <div class="chip-group" id="lane-filters">
+            <button class="chip is-active" type="button" data-lane="all">全部</button>
+            <button class="chip" type="button" data-lane="upstream">上游基础设施</button>
+            <button class="chip" type="button" data-lane="midstream">中游模型平台</button>
+            <button class="chip" type="button" data-lane="downstream">下游应用商业化</button>
+            <button class="chip" type="button" data-lane="deepdive">深度分享与测评</button>
+          </div>
+        </section>
+
+        <section class="panel feed-panel">
+          <div class="section-head">
+            <div>
+              <h2>全量资讯</h2>
+              <p id="feed-summary">等待数据。</p>
+            </div>
+          </div>
+          <div class="status-banner" id="status-banner">正在连接本地服务...</div>
+          <div class="feed-list" id="feed-list"></div>
+        </section>
+
+        <section class="panel settings-panel" id="settings-panel">
+          <div class="section-head">
+            <div>
+              <h2>推送与定时</h2>
+              <p>支持飞书自定义机器人、企业微信群机器人，以及每日 09:00 自动生成。</p>
+            </div>
+          </div>
+          <form class="settings-form" id="settings-form">
+            <label class="field">
+              <span>飞书机器人 Webhook</span>
+              <input id="feishu-webhook" type="url" placeholder="https://open.feishu.cn/..." />
+            </label>
+            <label class="field">
+              <span>企业微信机器人 Webhook</span>
+              <input id="wechat-webhook" type="url" placeholder="https://qyapi.weixin.qq.com/..." />
+            </label>
+            <label class="field">
+              <span>早报条数</span>
+              <input id="report-top-count" type="number" min="6" max="24" step="1" />
+            </label>
+            <label class="field">
+              <span>抓取窗口（小时）</span>
+              <input id="config-window-hours" type="number" min="24" max="168" step="24" />
+            </label>
+            <label class="toggle">
+              <input id="enable-auto-push" type="checkbox" />
+              <span>每日自动生成时，顺带推送到已配置机器人</span>
+            </label>
+            <div class="hero__actions">
+              <button class="action-button" type="submit">保存配置</button>
+              <a class="ghost-button" href="./install-daily-task.ps1">安装本机 09:00 定时任务</a>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel source-panel">
+          <div class="section-head">
+            <div>
+              <h2>来源健康度</h2>
+              <p>这里可以直观看到为什么大V池是否有内容，以及哪些源抓取成功。</p>
+            </div>
+          </div>
+          <div class="source-status-list" id="source-status-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="feed-card-template">
+      <article class="feed-card">
+        <div class="feed-card__meta">
+          <span class="badge feed-card__lane"></span>
+          <span class="badge badge--muted feed-card__source"></span>
+          <span class="feed-card__time"></span>
+        </div>
+        <h3 class="feed-card__title"></h3>
+        <p class="feed-card__original"></p>
+        <p class="feed-card__summary"></p>
+        <p class="feed-card__angle"></p>
+        <p class="feed-card__pro"></p>
+        <div class="feed-card__footer">
+          <span class="score-pill"></span>
+          <a class="feed-card__link" target="_blank" rel="noreferrer noopener">查看原文</a>
+        </div>
+      </article>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

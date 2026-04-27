@@ -1,0 +1,64 @@
+<view class="page-shell">
+  <view class="card hero-card">
+    <view class="badge">Mini Program</view>
+    <view class="hero-title">AI圈今日要闻</view>
+    <view class="hero-desc">适配手机端的中文 AI 早报。外行看得懂，内行有门道。</view>
+    <view class="hero-actions">
+      <button class="button-primary" onTap="loadReport">刷新早报</button>
+    </view>
+    <view class="hero-meta">{{statusText}}</view>
+  </view>
+
+  <view class="section card" a:if="{{report}}">
+    <view class="section-title">今日导读</view>
+    <view class="section-desc">{{report.lead}}</view>
+    <view class="stats-grid">
+      <view class="stat-card" a:for="{{stats}}" a:key="label">
+        <view class="stat-label">{{item.label}}</view>
+        <view class="stat-value">{{item.value}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section card" a:if="{{topItems.length}}">
+    <view class="section-title">今日爆点</view>
+    <view class="section-desc">每条都带中文标题、中文摘要和“说人话”解读。</view>
+    <view class="feed-list">
+      <view class="feed-card" a:for="{{topItems}}" a:key="id">
+        <view class="feed-meta">
+          <text class="badge">{{item.laneText}}</text>
+          <text class="feed-source">{{item.sourceName}}</text>
+        </view>
+        <view class="feed-title">{{item.hotTitle || item.titleZh}}</view>
+        <view class="feed-original">原标题：{{item.title}}</view>
+        <view class="feed-summary">中文摘要：{{item.summaryZh}}</view>
+        <view class="feed-angle">{{item.plainTalk}}</view>
+        <view class="feed-pro">{{item.proTake}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section card" a:if="{{topicPool.length}}">
+    <view class="section-title">选题池</view>
+    <view class="topic-list">
+      <view class="topic-card" a:for="{{topicPool}}" a:key="topic">
+        <view class="badge">选题</view>
+        <view class="topic-title">{{item.topic}}</view>
+        <view class="topic-angle">{{item.angle}}</view>
+        <view class="topic-meta">{{item.format}} · {{item.source}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section card" a:if="{{allItems.length}}">
+    <view class="section-title">全部资讯</view>
+    <view class="section-desc">适合手机刷读的 AI 资讯流。</view>
+    <view class="feed-list">
+      <view class="feed-card" a:for="{{allItems}}" a:key="id">
+        <view class="feed-title">{{item.titleZh}}</view>
+        <view class="feed-original">{{item.sourceName}} · {{item.bucketText}} · {{item.laneText}}</view>
+        <view class="feed-summary">{{item.summaryZh}}</view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,8 @@
+{
+  "appName": "AI圈今日要闻",
+  "reportTopCount": 12,
+  "timeWindowHours": 72,
+  "enableAutoPush": false,
+  "feishuWebhook": "",
+  "wechatWebhook": ""
+}
